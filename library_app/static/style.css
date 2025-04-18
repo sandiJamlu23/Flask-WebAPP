@@ -1,40 +1,35 @@
-
 body {
     font-family: 'Arial', sans-serif;
     background-color: #f8f9fa;
+    background-image: url('https://www.transparenttextures.com/patterns/wood-pattern.png'); /* Subtle wood texture */
+    background-attachment: fixed;
 }
 .card {
+    transition: transform 0.2s;
     max-width: 500px;
     margin: 0 auto;
+}
+.card:hover {
+    transform: scale(1.05);
 }
 .table th, .table td {
     vertical-align: middle;
 }
-
-nav {
-    margin-bottom: 20px;
+.modal-dialog {
+    max-width: 400px;
 }
-nav a {
-    margin-right: 10px;
+/* Library-themed colors */
+.navbar-dark {
+    background-color: #2c3e50; /* Dark blue for navbar */
 }
-.container {
-    max-width: 800px;
-    margin: 0 auto;
+.card {
+    border-color: #8b4513; /* Brown for library vibe */
 }
-ul {
-    list-style: none;
-    padding: 0;
+.btn-primary {
+    background-color: #4682b4; /* Steel blue for borrow */
+    border-color: #4682b4;
 }
-li {
-    margin: 10px 0;
-}
-button {
-    padding: 10px;
-    background-color: #28a745;
-    color: white;
-    border: none;
-    cursor: pointer;
-}
-button:hover {
-    background-color: #218838;
+.btn-success {
+    background-color: #228b22; /* Forest green for return */
+    border-color: #228b22;
 }

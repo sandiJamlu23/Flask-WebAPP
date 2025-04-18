@@ -1,9 +1,10 @@
-from flask import Flask, Blueprint, render_template, request, redirect, url_for
+from flask import Flask, Blueprint, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///library.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SECRET_KEY'] = 'my-super-secret-key-123'
 db = SQLAlchemy(app)
 
 # Define blueprint
@@ -33,7 +34,10 @@ def borrow_book(book_id):
         if not book.is_borrowed:
             book.is_borrowed = True
             db.session.commit()
+            flash(f"Successfully borrowed '{book.title}'!", "success")
             return redirect(url_for('library.list_books'))
+        else:
+            flash("This book is already borrowed.", "danger")
     return render_template('borrow.html', book=book)
 
 @library_bp.route('/return/<int:book_id>', methods=['GET', 'POST'])
@@ -43,8 +47,11 @@ def return_book(book_id):
         if book.is_borrowed:
             book.is_borrowed = False
             db.session.commit()
+            flash(f"Successfully returned '{book.title}'!", "success")
             return redirect(url_for('library.list_books'))
-    return render_template('return.html', book=book)
+        else:
+            flash("This book is already available.", "danger")
+    return render_template('books.html', book=book)
 
 # Create database and register blueprint *after* defining routes
 with app.app_context():

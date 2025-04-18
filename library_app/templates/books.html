@@ -2,32 +2,66 @@
 {% block content %}
     <h1 class="mb-4">Library Books</h1>
     {% if books %}
-        <table class="table table-striped table-hover">
-            <thead>
-                <tr>
-                    <th>Title</th>
-                    <th>Author</th>
-                    <th>Status</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for book in books %}
-                    <tr>
-                        <td>{{ book.title }}</td>
-                        <td>{{ book.author }}</td>
-                        <td>{{ 'Borrowed' if book.is_borrowed else 'Available' }}</td>
-                        <td>
+        <div class="row">
+            {% for book in books %}
+                <div class="col-md-4 mb-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ book.title }}</h5>
+                            <p class="card-text">By {{ book.author }}</p>
+                            <p class="card-text">
+                                <strong>Status:</strong> {{ 'Borrowed' if book.is_borrowed else 'Available' }}
+                            </p>
                             {% if book.is_borrowed %}
-                                <a href="{{ url_for('library.return_book', book_id=book.id) }}" class="btn btn-sm btn-success">Return</a>
+                                <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#returnModal{{ book.id }}">Return</button>
                             {% else %}
-                                <a href="{{ url_for('library.borrow_book', book_id=book.id) }}" class="btn btn-sm btn-primary">Borrow</a>
+                                <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#borrowModal{{ book.id }}">Borrow</button>
                             {% endif %}
-                        </td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                        </div>
+                    </div>
+                </div>
+                <!-- Borrow Modal -->
+                <div class="modal fade" id="borrowModal{{ book.id }}" tabindex="-1" aria-labelledby="borrowModalLabel{{ book.id }}" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="borrowModalLabel{{ book.id }}">Borrow Book</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                Do you want to borrow "{{ book.title }}" by {{ book.author }}?
+                            </div>
+                            <div class="modal-footer">
+                                <form method="POST" action="{{ url_for('library.borrow_book', book_id=book.id) }}">
+                                    <button type="submit" class="btn btn-primary">Confirm Borrow</button>
+                                </form>
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Return Modal -->
+                <div class="modal fade" id="returnModal{{ book.id }}" tabindex="-1" aria-labelledby="returnModalLabel{{ book.id }}" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="returnModalLabel{{ book.id }}">Return Book</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                Do you want to return "{{ book.title }}" by {{ book.author }}?
+                            </div>
+                            <div class="modal-footer">
+                                <form method="POST" action="{{ url_for('library.return_book', book_id=book.id) }}">
+                                    <button type="submit" class="btn btn-success">Confirm Return</button>
+                                </form>
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
     {% else %}
         <p class="text-muted">No books available.</p>
     {% endif %}

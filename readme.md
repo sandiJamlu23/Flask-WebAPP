@@ -2,29 +2,26 @@
 
 ## Overview
 
-This is a Flask web application for a library system, allowing users to browse books, borrow them, and return them. The app uses a SQLite database, a Flask blueprint for routing, and Bootstrap for a modern UI.
+A Flask web application for a library system, allowing users to browse, borrow, and return books. Uses SQLitea SQLite database, a Flask blueprint, and Bootstrap for a responsive UI with cards, modals, and flash messages.
 
 ### Features
 
-- **View Books**: Displays a list of books with title, author, and availability status.
-- **Borrow Books**: Users can borrow available books, marking them as borrowed.
-- **Return Books**: Users can return borrowed books, making them available again.
-- **Responsive UI**: Styled with Bootstrap for a clean, mobile-friendly interface.
+- **View Books**: Books displayed as Bootstrap cards with title, author, and status.
+- **Borrow/Returns Books**: Handled via modals with success/error feedback via flash messages.
+- **Responsive UI**: Bootstrap navbar, cards, modals, and alerts with a library-themed design.
 
 ## Project Structure
 
 ```
 library_app/
-├── app.py                 # Main Flask app with blueprint and routes
+├── app.py                 # Main Flask app with blueprint, routes, and flash messages
 ├── templates/             # HTML templates
-│   ├── base.html          # Base template with navbar
-│   ├── books.html         # Book list page
-│   ├── borrow.html        # Borrow confirmation page
-│   └── return.html        # Return confirmation page
+│   ├── base.html          # Base template with navbar and flash messages
+│   ├── books.html         # Book list with cards and modals
 ├── static/                # Static files
-│   └── style.css          # Custom CSS
-├── library.db             # SQLite database (created on first run)
-└── requirements.txt       # Python dependencies
+│   └── style.css          # Custom CSS with library theme
+├── library.db             # SQLite database
+└── requirements.txt       # Dependencies
 ```
 
 ## Setup Instructions
@@ -93,26 +90,23 @@ library_app/
 The main Flask app defines the blueprint, database, and routes.
 
 ```python
-from flask import Flask, Blueprint, render_template, request, redirect, url_for
+from flask import Flask, Blueprint, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 
-# Initialize Flask app
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///library.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SECRET_KEY'] = 'your-super-secret-key-123'  # Required for flash messages
 db = SQLAlchemy(app)
 
-# Define blueprint
 library_bp = Blueprint('library', __name__)
 
-# Book model
 class Book(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(100), nullable=False)
+    title = db.Columnstories(db.String(100), nullable=False)
     author = db.Column(db.String(50), nullable=False)
     is_borrowed = db.Column(db.Boolean, default=False)
 
-# Routes
 @library_bp.route('/')
 def index():
     return render_template('base.html')
@@ -129,8 +123,11 @@ def borrow_book(book_id):
         if not book.is_borrowed:
             book.is_borrowed = True
             db.session.commit()
+            flash(f"Successfully borrowed '{book.title}'!", "success")
             return redirect(url_for('library.list_books'))
-    return render_template('borrow.html', book=book)
+        else:
+            flash("This book is already borrowed.", "danger")
+    return render_template('books.html', book=book)
 
 @library_bp.route('/return/<int:book_id>', methods=['GET', 'POST'])
 def return_book(book_id):
@@ -139,10 +136,12 @@ def return_book(book_id):
         if book.is_borrowed:
             book.is_borrowed = False
             db.session.commit()
+            flash(f"Successfully returned '{book.title}'!", "success")
             return redirect(url_for('library.list_books'))
-    return render_template('return.html', book=book)
+        else:
+            flash("This book is already available.", "danger")
+    return render_template('books.html', book=book)
 
-# Initialize database and register blueprint
 with app.app_context():
     db.create_all()
 
@@ -157,13 +156,13 @@ if __name__ == '__main__':
 - **Blueprint**: `library_bp` organizes routes under the `library` namespace (e.g., `url_for('library.list_books')`).
 - **Database**: SQLite stores books in `library.db`. The `Book` model tracks `id`, `title`, `author`, and `is_borrowed`.
 - **Routes**: `/books` lists books, `/borrow/<id>` and `/return/<id>` handle actions.
+- **Secret Key**: `SECRET_KEY` enables session-based flash messages
+- **Routes**: Used in `borrow_book` and `return_book>` for feedback.
 
 ### Templates
 
-- `base.html`: Base template with Bootstrap navbar and container.
-- `books.html`: Displays books in a Bootstrap table with borrow/return buttons.
-- `borrow.html`: Confirms borrowing with a Bootstrap card and form.
-- `return.html`: Confirms returning with a Bootstrap card and form.
+- `base.html`: Bootstrap navbar, flash message alerts.
+- `books.html`: Cards in a grid, modals for borrow/return.
 
 ### `static/style.css`
 
@@ -173,22 +172,44 @@ Custom CSS enhances Bootstrap:
 body {
     font-family: 'Arial', sans-serif;
     background-color: #f8f9fa;
+    background-image: url('https://www.transparenttextures.com/patterns/wood-pattern.png');
+    background-attachment: fixed;
 }
 .card {
+    transition: transform 0.2s;
     max-width: 500px;
     margin: 0 auto;
+    border-color: #8b4513;
+}
+.card:hover {
+    transform: scale(1.05);
 }
 .table th, .table td {
     vertical-align: middle;
+}
+.modal-dialog {
+    max-width: 400px;
+}
+.navbar-dark {
+    background-color: #2c3e50;
+}
+.btn-primary {
+    background-color: #4682b4;
+    border-color: #4682b4;
+}
+.btn-success {
+    background-color: #228b22;
+    border-color: #228b22;
 }
 ```
 
 ## UI Details
 
 - **Bootstrap 5**: Used via CDN for responsive design (navbar, tables, cards, buttons).
-- **Navbar**: Dark-themed, collapsible for mobile.
-- **Book List**: Styled as a striped, hoverable table.
-- **Borrow/Return Pages**: Use cards for a clean, centered form layout.
+- **Cards**: Responsive grid with hover effects.
+- **Modals**: Handle borrow/return actions.
+- **Flash Messages**: `alert-success` or `alert-danger` for feedback
+- **Theme**: Library colors (blue navbar, brown card borders, wood background).
 
 ## Common Issues and Fixes
 
@@ -207,7 +228,9 @@ body {
 - **SQLAlchemy**: Used to manage SQLite database and `Book` model.
 - **Bootstrap**: Applied classes like `btn-primary`, `table-striped`, and `card`.
 - **Debugging**: Fixed blueprint registration and database issues.
-- **Next Steps**: Experiment with adding routes, tweak Bootstrap classes, or explain code in your own words to solidify understanding.
+- **Next Steps**: Add search or tweak modal styles.
+- **CSS** : Hover effects, custom theming.
+- **Flask**: Cards, modals, alerts, grids.
 
 ## Future Enhancements
 
