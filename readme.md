@@ -2,22 +2,23 @@
 
 ## Overview
 
-A Flask web application for a library system, allowing users to browse, borrow, and return books. Uses SQLitea SQLite database, a Flask blueprint, and Bootstrap for a responsive UI with cards, modals, and flash messages.
+A Flask web application for a library system, allowing users to browse, search, borrow, and return books with cover images. Uses SQLite, a Flask blueprint, and Bootstrap for a responsive UI with cards, modals, flash messages, search, and book covers.
 
 ### Features
 
-- **View Books**: Books displayed as Bootstrap cards with title, author, and status.
-- **Borrow/Returns Books**: Handled via modals with success/error feedback via flash messages.
-- **Responsive UI**: Bootstrap navbar, cards, modals, and alerts with a library-themed design.
+- **View Books**: Books displayed as Bootstrap cards with title, author, status, and cover images.
+- **Search Books**: Filter books by title or author.
+- **Borrow/Return Books**: Handled via modals with flash message feedback.
+- **Responsive UI**: Bootstrap navbar, cards, modals, and library-themed design.
 
 ## Project Structure
 
 ```
 library_app/
-├── app.py                 # Main Flask app with blueprint, routes, and flash messages
+├── app.py                 # Main Flask app with blueprint, routes, search, and book covers
 ├── templates/             # HTML templates
 │   ├── base.html          # Base template with navbar and flash messages
-│   ├── books.html         # Book list with cards and modals
+│   ├── books.html         # Book list with cards, modals, search, and images
 ├── static/                # Static files
 │   └── style.css          # Custom CSS with library theme
 ├── library.db             # SQLite database
@@ -26,68 +27,55 @@ library_app/
 
 ## Setup Instructions
 
-1. **Clone or Create the Project**:
+1. **Navigate to Project**:
 
-   - Ensure the project is in `D:\Flask WebAPP\library_app`.
-   - Verify the structure matches the above.
+   ```bash
+   cd D:\Flask WebAPP\library_app
+   ```
 
-2. **Set Up Virtual Environment**:
+2. **Activate Environment**:
 
-   - Use your Conda environment (`webAppFlask`):
-
-     ```bash
-     conda activate webAppFlask
-     ```
+   ```bash
+   conda activate webAppFlask
+   ```
 
 3. **Install Dependencies**:
 
-   - Run:
-
-     ```bash
-     pip install flask flask-sqlalchemy
-     pip freeze > requirements.txt
-     ```
+   ```bash
+   pip install flask flask-sqlalchemy
+   ```
 
 4. **Run the App**:
 
-   - Navigate to the project folder:
+   ```bash
+   python app.py
+   ```
 
-     ```bash
-     cd D:\Flask WebAPP\library_app
-     ```
+   Open `http://127.0.0.1:5000/books`.
 
-   - Start the Flask server:
+5. **Populate Database**:
 
-     ```bash
-     python app.py
-     ```
-
-   - Open `http://127.0.0.1:5000/books` in a browser.
-
-5. **Populate the Database**:
-
-   - If no books appear, add sample data via Python shell:
-
-     ```bash
-     python
-     ```
-
-     ```python
-     from app import app, db, Book
-     with app.app_context():
-         db.session.add(Book(title="The Great Gatsby", author="F. Scott Fitzgerald"))
-         db.session.add(Book(title="1984", author="George Orwell"))
-         db.session.commit()
-         books = Book.query.all()
-         for book in books:
-             print(book.id, book.title, book.author, book.is_borrowed)
-     ```
+   ```python
+   from app import app, db, Book
+   with app.app_context():
+       db.session.add(Book(
+           title="The Great Gatsby",
+           author="F. Scott Fitzgerald",
+           image_url="https://images.unsplash.com/photo-1544716278-ca5e3f4b2d6e?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80"
+       ))
+       db.session.add(Book(
+           title="1984",
+           author="George Orwell",
+           image_url="https://images.unsplash.com/photo-1544947950-fa07a98d237f?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80"
+       ))
+       db.session.commit()
+   ```
 
 ## Code Breakdown
 
 ### `app.py`
 
-The main Flask app defines the blueprint, database, and routes.
+Handles routes, database, search, and book covers.
 
 ```python
 from flask import Flask, Blueprint, render_template, request, redirect, url_for, flash
@@ -96,25 +84,32 @@ from flask_sqlalchemy import SQLAlchemy
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///library.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = 'your-super-secret-key-123'  # Required for flash messages
+app.config['SECRET_KEY'] = 'your-super-secret-key-123'
 db = SQLAlchemy(app)
 
 library_bp = Blueprint('library', __name__)
 
 class Book(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    title = db.Columnstories(db.String(100), nullable=False)
+    title = db.Column(db.String(100), nullable=False)
     author = db.Column(db.String(50), nullable=False)
     is_borrowed = db.Column(db.Boolean, default=False)
+    image_url = db.Column(db.String(200), nullable=True)
 
 @library_bp.route('/')
 def index():
     return render_template('base.html')
 
-@library_bp.route('/books')
+@library_bp.route('/books', methods=['GET', 'POST'])
 def list_books():
-    books = Book.query.all()
-    return render_template('books.html', books=books)
+    search_query = request.form.get('search', '') if request.method == 'POST' else request.args.get('search', '')
+    if search_query:
+        books = Book.query.filter(
+            (Book.title.ilike(f'%{search_query}%')) | (Book.author.ilike(f'%{search_query}%'))
+        ).all()
+    else:
+        books = Book.query.all()
+    return render_template('books.html', books=books, search_query=search_query)
 
 @library_bp.route('/borrow/<int:book_id>', methods=['GET', 'POST'])
 def borrow_book(book_id):
@@ -143,6 +138,7 @@ def return_book(book_id):
     return render_template('books.html', book=book)
 
 with app.app_context():
+    db.drop_all()
     db.create_all()
 
 app.register_blueprint(library_bp)
@@ -153,20 +149,16 @@ if __name__ == '__main__':
 
 **Key Points**:
 
-- **Blueprint**: `library_bp` organizes routes under the `library` namespace (e.g., `url_for('library.list_books')`).
-- **Database**: SQLite stores books in `library.db`. The `Book` model tracks `id`, `title`, `author`, and `is_borrowed`.
-- **Routes**: `/books` lists books, `/borrow/<id>` and `/return/<id>` handle actions.
-- **Secret Key**: `SECRET_KEY` enables session-based flash messages
-- **Routes**: Used in `borrow_book` and `return_book>` for feedback.
+- **Book Covers**: `image_url` column stores cover image URLs.
+- **Search**: `list_books` uses `ilike` for title/author filtering.
+- **Flash Messages**: Feedback for borrow/return.
 
 ### Templates
 
 - `base.html`: Bootstrap navbar, flash message alerts.
-- `books.html`: Cards in a grid, modals for borrow/return.
+- `books.html`: Cards with images, modals, and search form.
 
-### `static/style.css`
-
-Custom CSS enhances Bootstrap:
+### `style.css`
 
 ```css
 body {
@@ -183,6 +175,9 @@ body {
 }
 .card:hover {
     transform: scale(1.05);
+}
+.card-img-top {
+    border-bottom: 1px solid #8b4513;
 }
 .table th, .table td {
     vertical-align: middle;
@@ -201,47 +196,45 @@ body {
     background-color: #228b22;
     border-color: #228b22;
 }
+.input-group {
+    max-width: 500px;
+    margin: 0 auto;
+}
 ```
 
 ## UI Details
 
-- **Bootstrap 5**: Used via CDN for responsive design (navbar, tables, cards, buttons).
-- **Cards**: Responsive grid with hover effects.
-- **Modals**: Handle borrow/return actions.
-- **Flash Messages**: `alert-success` or `alert-danger` for feedback
-- **Theme**: Library colors (blue navbar, brown card borders, wood background).
+- **Bootstrap 5**: Navbar, cards, modals, alerts, input-group.
+- **Cards**: Include cover images (`card-img-top`) with fallback placeholder.
+- **Search Form**: Centered input for title/author search.
+- **Flash Messages**: `alert-success` or `alert-danger`.
+- **Theme**: Library colors (blue navbar, brown borders, wood background).
 
-## Common Issues and Fixes
+## Common Issues
 
-1. **Database Empty**:
-   - Run the Python shell command to add books.
-   - Check `library.db` exists in `library_app/`.
-2. **404 Errors**:
-   - Ensure `url_for('library.<route>')` matches blueprint route names (e.g., `library.list_books`).
-   - Verify `app.py` has all routes defined before `app.register_blueprint`.
-3. **Templates Not Found**:
-   - Confirm `templates/` contains `base.html`, `books.html`, `borrow.html`, and `return.html`.
+1. **Images Don’t Load**:
+   - Check `image_url` in database; ensure URLs are valid.
+   - Verify `<img>` tag in `books.html`.
+2. **Search Fails**:
+   - Confirm `ilike` in `app.py` and `name="search"` in form.
+3. **Database Empty**:
+   - Repopulate with sample books and `image_url`.
 
 ## Learning Takeaways
 
-- **Flask Basics**: Learned routes, templates, blueprints, and `url_for`.
-- **SQLAlchemy**: Used to manage SQLite database and `Book` model.
-- **Bootstrap**: Applied classes like `btn-primary`, `table-striped`, and `card`.
-- **Debugging**: Fixed blueprint registration and database issues.
-- **Next Steps**: Add search or tweak modal styles.
-- **CSS** : Hover effects, custom theming.
-- **Flask**: Cards, modals, alerts, grids.
+- **Flask**: Form handling, flash messages, secret key.
+- **SQLAlchemy**: `ilike` queries, database schema updates.
+- **Bootstrap**: Cards, modals, input-group, images.
+- **Next Steps**: Add user login or UI animations.
 
 ## Future Enhancements
 
-- **User Authentication**: Add login with Flask-Login.
-- **Search Feature**: Filter books by title or author.
-- **Admin Panel**: Add/edit books via a form.
-- **Deployment**: Host on Render or Heroku.
+- **User Login**: Track borrowers with Flask-Login.
+- **Admin Panel**: Add/edit books.
+- **Book Details**: Show more info in a modal.
 
 ## Review Tips
 
-- **Re-run the App**: Follow setup steps to refresh your memory.
-- **Tweak Code**: Change a button color or add a new book to practice.
-- **Debug**: If errors appear, check the console and revisit “Common Issues.”
-- **Ask Questions**: If confused, note specific topics (e.g., blueprints, SQLAlchemy) for clarification.
+- Test book cover images and search.
+- Tweak image styles (e.g., add shadow).
+- Review `app.py` for `image_url` and `ilike`.

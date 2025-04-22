@@ -1,16 +1,23 @@
 body {
     font-family: 'Arial', sans-serif;
-    background-color: #f8f9fa;
-    background-image: url('https://www.transparenttextures.com/patterns/wood-pattern.png'); /* Subtle wood texture */
+    background-color: #125841;
+    background-image: url('https://www.transparenttextures.com/patterns/45-degree-fabric-dark.png'); /* Subtle wood texture */
     background-attachment: fixed;
 }
 .card {
     transition: transform 0.2s;
     max-width: 500px;
     margin: 0 auto;
+    border-color: aliceblue;
+    box-shadow: #125841;
 }
 .card:hover {
     transform: scale(1.05);
+}
+.card-img-top{
+    border-bottom: 1px rgb(13, 97, 45);
+    border-radius: 8px 8px 0 0;
+    box-shadow: 0 2px 4px rgb(0, 0, 0, 0.2);
 }
 .table th, .table td {
     vertical-align: middle;
@@ -20,16 +27,25 @@ body {
 }
 /* Library-themed colors */
 .navbar-dark {
-    background-color: #2c3e50; /* Dark blue for navbar */
+    background-color: #56606b; /* Dark blue for navbar */
 }
-.card {
-    border-color: #8b4513; /* Brown for library vibe */
-}
+
 .btn-primary {
-    background-color: #4682b4; /* Steel blue for borrow */
-    border-color: #4682b4;
+    background-color: #0a0f13; /* Steel blue for borrow */
+    border-color: #092338;
 }
 .btn-success {
     background-color: #228b22; /* Forest green for return */
     border-color: #228b22;
+}
+
+.input-group{
+    max-width: 500px;
+    margin: 0 auto;
+}
+.form-control{
+    border-color: #56606b;
+}
+.form-label{
+    color: aliceblue;
 }
